@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>REN JINGYI'S ART MUSEUM</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 'paper': '#F5F5F7' },
+                    fontFamily: { 
+                        serif: ['Cormorant Garamond', 'serif'], 
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    screens: {
+                        'xs': '475px', 
+                        'landscape': {'raw': '(max-height: 500px)'}, 
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=Inter:wght@300;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #FFFFFF;
+            --text-color: #111111;
+            --cursor-color: #000000;
+        }
+
+        body { 
+            margin: 0; overflow: hidden; cursor: none; 
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            user-select: none;
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- 1. Gate Layer --- */
+        #gate-layer { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+        .gate-panel {
+            position: absolute; top: 0; bottom: 0; width: 50%;
+            background-color: #FFFFFF; z-index: 10000;
+            transition: transform 2.0s cubic-bezier(0.6, 0.05, 0.2, 1); will-change: transform;
+        }
+        .gate-left { left: 0; border-right: 1px solid rgba(0,0,0,0.02); }
+        .gate-right { right: 0; border-left: 1px solid rgba(0,0,0,0.02); }
+        body.open-gate .gate-left { transform: translateX(-100%); }
+        body.open-gate .gate-right { transform: translateX(100%); }
+
+        /* --- 2. Intro Content --- */
+        #intro-content {
+            position: fixed; inset: 0; z-index: 10001;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1s; padding: 20px; text-align: center;
+        }
+        body.open-gate #intro-content { opacity: 0; pointer-events: none; }
+
+        .hero-title {
+            font-family: 'Allura', cursive; 
+            font-size: clamp(2.5rem, 10vw, 7rem); 
+            line-height: 1.1; color: #000; opacity: 0; filter: blur(10px); transform: scale(1.1);
+            padding: 0 10px;
+        }
+        .sub-title {
+            font-family: 'Cormorant Garamond', serif; 
+            font-size: clamp(0.8rem, 2vw, 1.2rem); 
+            letter-spacing: 0.3em; text-transform: uppercase; margin-top: 1rem; opacity: 0; transform: translateY(20px);
+        }
+        
+        @media (max-height: 500px) and (orientation: landscape) {
+            .hero-title { font-size: 3rem; }
+            .enter-btn { margin-top: 2vh; }
+        }
+
+        .enter-btn {
+            margin-top: 5vh; padding: 12px 30px; border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 50px; font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 3px;
+            text-transform: uppercase; cursor: none; opacity: 0; transition: all 0.3s;
+            position: relative; overflow: hidden; background: rgba(255,255,255,0.8);
+            pointer-events: auto; z-index: 10002;
+        }
+        .enter-btn:hover { background: #000; color: #fff; }
+        
+        .keyword {
+            position: absolute; font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(0.7rem, 1.5vw, 1rem); 
+            color: rgba(0,0,0,0.4); opacity: 0; font-style: italic; white-space: nowrap;
+        }
+
+        /* --- 3. UI Layer --- */
+        .ui-layer {
+            position: fixed; inset: 0; pointer-events: none; z-index: 100;
+            display: flex; flex-direction: column; justify-content: space-between;
+            opacity: 0; transition: opacity 2s 1s;
+        }
+        body.open-gate .ui-layer { opacity: 1; }
+
+        .top-nav { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 40px; width: 100%;
+        }
+        @media (max-width: 768px) {
+            .top-nav { padding: 20px 25px; } 
+            .logo { font-size: 1.5rem !important; }
+            #cursor, #cursor-ring { display: none !important; }
+            body { cursor: auto; }
+            .enter-btn { cursor: auto; }
+            .logo { cursor: auto; }
+        }
+
+        .logo { 
+            font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 500; font-style: italic;
+            color: var(--text-color); cursor: pointer; pointer-events: auto; transition: opacity 0.3s;
+        }
+        .status {
+            font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 1px;
+            opacity: 0.4; text-transform: uppercase;
+        }
+
+        /* --- 4. Cursor --- */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 10px; height: 10px;
+            background: var(--cursor-color); border-radius: 50%;
+            pointer-events: none; z-index: 20000; 
+            transition: transform 0.1s, width 0.3s, height 0.3s, background 0.3s; transform: translate(-50%, -50%);
+        }
+        #cursor.hover-active { width: 40px; height: 40px; background: rgba(0,0,0,0.1); backdrop-filter: blur(2px); }
+        
+        #cursor-ring {
+            position: fixed; top: 0; left: 0; width: 44px; height: 44px;
+            border: 1px solid var(--cursor-color); border-radius: 50%;
+            pointer-events: none; z-index: 19999; opacity: 0.2;
+            transition: transform 0.2s ease-out, width 0.3s, height 0.3s, opacity 0.3s; transform: translate(-50%, -50%);
+        }
+        #cursor-ring.hover-active { width: 60px; height: 60px; opacity: 0.5; border-color: rgba(0,0,0,0.3); }
+        
+        /* --- 5. Modals --- */
+        .magnifier {
+            position: absolute; width: 240px; height: 240px; border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.1); background-color: #fff;
+            background-repeat: no-repeat; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            pointer-events: none; display: none; z-index: 9999;
+        }
+        @media (max-width: 768px) { .magnifier { display: none !important; } }
+
+        #modal {
+            position: fixed; inset: 0; z-index: 2000; 
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s;
+        }
+        #modal.open { opacity: 1; pointer-events: auto; }
+        
+        .modal-card {
+            width: 90vw; height: 85vh; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 20px; box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+            overflow: hidden; display: flex; flex-direction: column;
+        }
+        
+        @media (max-height: 500px) and (orientation: landscape) {
+            .modal-card { flex-direction: row !important; height: 90vh; width: 90vw; }
+            #img-wrapper { width: 50% !important; height: 100% !important; }
+            .modal-content-text { width: 50% !important; height: 100% !important; padding: 2rem !important; }
+            .modal-content-text h2 { font-size: 2rem !important; }
+        }
+        @media (min-width: 768px) { .modal-card { width: 85vw; height: 80vh; flex-direction: row; } }
+
+        .play-overlay {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            z-index: 20; transition: opacity 0.3s;
+        }
+        .glass-btn {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.3s, background 0.3s;
+        }
+        .glass-btn:hover { transform: scale(1.1); background: rgba(255, 255, 255, 0.35); }
+        .play-icon {
+            width: 0; height: 0; margin-left: 5px;
+            border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+            border-left: 18px solid #000; opacity: 0.8;
+        }
+        
+        .video-container {
+            position: absolute; inset: 0; z-index: 15; background: #000;
+            display: none; opacity: 0; transition: opacity 0.5s;
+            align-items: center; justify-content: center;
+        }
+        .video-container.active { display: flex; opacity: 1; }
+        
+        video { 
+            max-width: 100%; max-height: 100%; 
+            width: auto; height: auto; 
+            object-fit: contain; 
+        }
+
+        #about-modal {
+            position: fixed; inset: 0; z-index: 3000; 
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(15px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+        }
+        #about-modal.open { opacity: 1; pointer-events: auto; }
+
+        .about-card {
+            width: auto; height: auto; max-width: 90vw; max-height: 85vh;
+            overflow: visible; position: relative; background: transparent;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .about-img { 
+            display: block; width: auto; height: auto; max-width: 100%; max-height: 85vh; 
+            object-fit: contain; cursor: crosshair; box-shadow: 0 30px 80px rgba(0,0,0,0.15); border-radius: 8px;
+        }
+        
+        .close-about {
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+            background: rgba(255,255,255,0.9); padding: 8px 20px; border-radius: 30px;
+            cursor: pointer; transition: all 0.2s; backdrop-filter: blur(5px);
+            text-transform: uppercase; letter-spacing: 1px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            z-index: 3001;
+        }
+        @media (max-width: 768px) {
+            .close-about { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #fff; color: #000; border: 1px solid #eee; }
+        }
+        @media (min-width: 769px) {
+            .close-about { position: absolute; top: -50px; right: 0; }
+            .close-about:hover { background: #000; color: #fff; }
+        }
+
+        .hint {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; letter-spacing: 3px; opacity: 0;
+            pointer-events: none; color: var(--text-color); z-index: 50;
+            transition: opacity 1s 2s; text-align: center; width: 100%;
+        }
+        body.open-gate .hint { opacity: 0.4; }
+
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "gsap": "https://unpkg.com/gsap@3.12.5/index.js"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="cursor"></div>
+    <div id="cursor-ring"></div>
+    <div class="magnifier" id="mag"></div>
+
+    <div class="hint">SCROLL / DRAG TO EXPLORE</div>
+
+    <div id="gate-layer">
+        <div class="gate-panel gate-left"></div>
+        <div class="gate-panel gate-right"></div>
+    </div>
+
+    <div id="intro-content">
+        <h1 class="hero-title" id="hero-title">Ren Jingyi's Art Museum</h1>
+        <div class="sub-title" id="hero-sub">Design & Cultural Industries</div>
+        <div id="keyword-cloud" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+        <button class="enter-btn" id="enter-btn" onclick="enterMuseum()">Enter Exhibition</button>
+    </div>
+
+    <div class="ui-layer">
+        <div class="top-nav pointer-auto">
+            <div class="logo" onclick="openAbout()">Ren Jingyi.</div>
+            <div class="status">Curated Archive</div>
+        </div>
+    </div>
+
+    <div id="canvas-container" class="fixed inset-0 z-0"></div>
+
+    <div id="modal">
+        <div class="modal-card relative">
+            <div class="absolute top-6 right-6 z-20 cursor-pointer text-[10px] font-bold tracking-widest opacity-40 hover:opacity-100 uppercase bg-white/50 px-3 py-1 rounded-full pointer-auto" onclick="closeModal()">Close</div>
+            
+            <div class="w-full md:w-2/3 h-1/2 md:h-full flex items-center justify-center p-8 bg-gray-50 relative overflow-hidden" id="img-wrapper">
+                
+                <!-- Base Image -->
+                <img id="modal-img" src="" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg cursor-crosshair transition-opacity duration-500">
+                
+                <!-- Play Button Overlay -->
+                <div id="play-overlay" class="play-overlay hidden">
+                    <div class="glass-btn" onclick="playVideo()">
+                        <div class="play-icon"></div>
+                    </div>
+                </div>
+
+                <!-- Video Player -->
+                <div id="video-container" class="video-container rounded-lg overflow-hidden shadow-2xl">
+                    <video id="art-video" controls loop playsinline>
+                        <source src="" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+            </div>
+            
+            <!-- [修改] 文本面板布局优化 -->
+            <div class="modal-content-text w-full md:w-1/3 h-1/2 md:h-full p-8 md:p-12 flex flex-col bg-white overflow-hidden relative">
+                
+                <!-- 上部分：装饰线和序号 -->
+                <div class="flex flex-col items-start mt-8 md:mt-16">
+                    <div class="w-8 h-[2px] bg-black opacity-10 mb-4"></div>
+                    <span class="font-sans text-[10px] tracking-[0.2em] uppercase opacity-40">Object <span id="modal-id-display">01</span></span>
+                </div>
+
+                <!-- 中间部分：标题和描述 -->
+                <div class="flex-1 flex flex-col justify-center overflow-y-auto my-4 pr-2">
+                    <h2 id="modal-title" class="text-4xl md:text-5xl font-serif italic mb-6 leading-tight">Title</h2>
+                    <p id="modal-desc" class="font-sans text-xs leading-6 opacity-60 tracking-wide text-gray-600 whitespace-pre-wrap break-words">
+                        Loading description...
+                    </p>
+                </div>
+                
+                <!-- [修改] 底部右侧：提示语 (使用 mt-auto 和 self-end 推到右下角) -->
+                <div class="mt-auto self-end text-right pb-2">
+                    <span id="video-hint" class="hidden font-bold text-black text-[10px] tracking-widest uppercase block">Video documentation available.</span>
+                    <span id="standard-hint" class="text-[10px] tracking-widest uppercase opacity-40 block">Tap image to explore details.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="about-modal">
+        <div class="about-card">
+            <div class="close-about" onclick="closeAbout()">Close Bio</div>
+            <!-- CV Image Loaded Here -->
+            <img src="assets/cv.jpg" class="about-img" id="about-img-el" alt="Ren Jingyi CV">
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+        import gsap from 'gsap';
+
+        const TOTAL_OBJECTS = 20; 
+
+        const VIDEO_INDICES = [1, 3, 5, 6, 7, 8, 12]; 
+
+        const PROJECT_DATA = [
+            {
+                id: 1,
+                title: "YONG",
+                text: `Yong is an experimental exploration of Ningbo’s cultural soul, centered on the unique, yet often overlooked, tradition of Yong Opera. While Yue Opera enjoys widespread popularity, my work seeks to reclaim the distinct sonic identity of the region by integrating the Ningbo dialect and local folk melodies like "Madeng Diao." Inspired by the modernization of classic narratives, this project bridges heritage and technology. Using TouchDesigner, I transform abstract auditory elements—opera vocals and dialect nuances—into dynamic particle visualizations. This translation of sound into sight creates an immersive narrative, offering audiences a contemporary portal to rediscover and appreciate the fading resonance of local tradition.
+
+Year: 2024
+Medium: Digital Film`
+            },
+            {
+                id: 2,
+                title: "Return of Lost Treasures",
+                text: `Return of Lost Treasures: A Digital Map of Chinese Cultural Relics is a Figma-designed applet that connects heritage preservation with digital media. It focuses on the global dispersal of ancient Chinese artifacts, using interactive technology to bridge history and modernity. Features such as an interactive map and multimedia narratives enable users to trace the journeys of lost relics, deepening their emotional engagement with cultural heritage. Drawing on my experience in documentary and intangible heritage, and inspired by global digital museum efforts, this project aims to raise public interest in cultural repatriation and promote broader appreciation of Chinese history.
+
+Year: 2024
+Medium: User Interface Design`
+            },
+            {
+                id: 3,
+                title: "The Way of Numbers: Ancient Splendor",
+                text: `The Way of Numbers: Ancient Splendor is a static Unity 3D design that honors ancient Chinese mathematicians by using time as a narrative framework to highlight their achievements. Combining text, imagery, and atmospheric lighting and sound, it presents key breakthroughs in arithmetic, algebra, geometry, and astronomy. By recreating these milestones digitally, the project revives the "ancient rhymes" of Chinese wisdom and underscores its lasting impact on global scientific history.
+
+Year: 2024
+Medium: Interactive Project`
+            },
+            {
+                id: 4,
+                title: "Yong Opera",
+                text: `This web design project opens a digital gateway to Yong Opera, a traditional art form from Ningbo. By combining modern interface design with the stage’s historical aesthetics, it makes this intangible cultural heritage accessible to today’s audience. The website functions as an interactive archive, showcasing the genre’s distinctive vocal styles, costumes, and stories. It bridges ancient tradition and the digital age, preserving the vibrant spirit of Yong Opera for future generations to explore and appreciate.
+
+Year: 2024
+Medium: Web Design`
+            },
+            {
+                id: 5,
+                title: "GRAB",
+                text: `Grab Hotpot fuses traditional Chinese culinary culture with futuristic innovation. The design bridges heritage and technology, offering climate-resilient dining through a sustainable, mushroom-based menu delivered by robotic automation. Its visual identity captures this duality: a playful, hand-drawn logo features a 'G' shaped like a ladle and a 'b' resembling a mechanical arm. Embodying the idea of "One Pot, All Flavors," the project turns dining into an interactive experience that invites a new generation to enjoy hotpot as a dynamic blend of flavor, community, and the future.
+
+Year: 2024
+Medium: Brand Design`
+            },
+            {
+                id: 6,
+                title: "Playful Realms",
+                text: `Playful Realms is a dynamic web application that celebrates digital interaction through core web technologies: HTML, CSS, and JavaScript. Featuring eight mini-games, it explores user engagement and responsive design by combining smooth animations with intuitive mechanics to create delight. Built entirely without external game engines, the project demonstrates the creative potential of standard web code. It invites users to rediscover the simple, immediate joy of playing in the browser.
+
+Year: 2025
+Medium: Web Design`
+            },
+            {
+                id: 7,
+                title: "Nice Meeting",
+                text: `Nice Meeting is an intimate, interview-style documentary that follows young entrepreneurs returning to their rural roots. Through the story of Li Yiqing, it captures the vibrant struggle of a new generation committed to revitalizing their hometowns. Using a warm, down-to-earth narrative, the film explores their emotional motivations and resilience in driving innovation locally. By documenting this spirit, Nice Meeting evokes a deep sense of hometown connection, celebrating the vital role young people play in rural development.
+
+Year: 2023
+Medium: Documentary`
+            },
+            {
+                id: 8,
+                title: "Virtual Walk Through Ancient Chinese Physics",
+                text: `Virtual Walk Through Ancient Chinese Physics is an immersive 3D experience that bridges historical heritage and modern technology. Built in Unity, it reconstructs ancient China’s overlooked scientific achievements in a virtual environment. By emphasizing interactive settings and character-driven storytelling, the project turns passive learning into active exploration. It invites users to engage directly with historical mechanics and principles, deepening their appreciation of early scientific ingenuity. As a form of digital preservation, it makes ancient knowledge tangible for today’s audience.
+
+Year: 2025
+Medium: Interactive Project`
+            },
+            {
+                id: 9,
+                title: "TAN",
+                text: `This work reimagines Wu'an Nuo Opera, an intangible cultural heritage, through information visualization. By transforming the dance’s fleeting rhythms and cultural imagery into dynamic forms and colors, it reveals the hidden history and emotional depth within the performance. The project bridges ancient tradition and the digital era, enabling Nuo’s vitality to resonate in a contemporary context. Through the interplay of light and data, viewers witness the rebirth of ancient rituals and experience the cultural echoes of a millennium.
+
+Year: 2025
+Medium: Visual Design`
+            },
+            {
+                id: 10,
+                title: "Innovative Fusion",
+                text: `This illustration series explores the dynamic convergence of technology and painting, revealing how innovation energizes artistic creation. Through expressive visuals, it illustrates how technology reshapes and transcends traditional boundaries. Using concise imagery and text, the work guides viewers to perceive this transformation, bridging digital tools and human creativity. It invites audiences to reimagine the canvas—sparking inspiration and reflection on the future possibilities of art in a tech-driven era.
+
+Year: 2025
+Medium: Illustration Design`
+            },
+            {
+                id: 11,
+                title: "The Four Treasures of LongDe",
+                text: `Under the theme "Culture Enriching Mountains and Seas, Creating the Future Together," this packaging design reimagines the "Longde Four Treasures"—Qin Jiao, Huang Qi, Dang Shen, and Huang Qin. Using a bold palette of red, yellow, green, and purple, it highlights each herb’s unique qualities while incorporating elements of Longde’s farming culture and industrial revitalization. The minimalist, practical, and eco-friendly style reflects the spirit of the Third Plenary Session of the 20th CPC Central Committee. By enhancing the brand image, the project aims to strengthen market competitiveness, support high-quality industrial growth, and advance rural revitalization and farmer prosperity.
+
+Year: 2025
+Medium: Packaging Design`
+            },
+            {
+                id: 12,
+                title: "My Soul Must Be Heavy and Gloomy",
+                text: `Socrates preached the rejection of bodily desires, yet I find reality defined by an inescapable, non-physical pain. My Soul Must Be Heavy and Gloomy is a multi-screen response to this agony. I fill the void with 'vulgar' stimulants—sugar, medication, digital validation, and intoxication. These are not pleasures, but necessary anesthetics. They act as a double-edged sword: momentarily numbing the soul while slowly corroding it like acid. I consciously exhaust my physical body to displace the internal overload of suffering. This work visualizes the dangerous cycle of using physical sensation to survive the weight of the soul.
+
+Year: 2023
+Medium: Digital Film`
+            },
+            {
+                id: 13,
+                title: "Everything Is Interconnected",
+                text: `Everything Is Interconnected is a photographic collage that synthesizes the architectural rhythms of two cultural landmarks: the Shanghai Museum and the Shanghai Art Museum. By isolating the geometric regularity of their staircases, I merge two distinct halves into a singular, seamless structure. This visual synthesis creates a new, impossible pathway, blurring the boundaries between different institutional spaces. The work suggests that despite physical separation, the underlying structures of culture and history are intrinsically linked, forming a continuous ascent through the city’s artistic memory.
+
+Year: 2022
+Medium: Collage`
+            },
+            {
+                id: 14,
+                title: "The Joke",
+                text: `Casualties of Play exposes the dangerous normalization of bullying. The central shoe lies overturned and stained, surrounded by pristine pairs that act as silent witnesses or complicit aggressors. The red dust is not just dirt—it symbolizes the invisible wounds left when violence is dismissed as "just a joke." Using everyday objects like sneakers, symbols of youth and status, the work critiques how we trivialize harm. It demands we acknowledge the lives being quietly destroyed while the world looks away.
+
+Year: 2023
+Medium: Photography`
+            },
+            {
+                id: 15,
+                title: "Academic Achievements",
+                text: `I independently own two software copyrights and two design patents. And independently write a thesis.
+
+Year: 2025`
+            },
+            {
+                id: 16,
+                title: "Academic Competition",
+                text: `I actively participated in various design discipline competitions and won over 40 awards. The works have been selected for exhibitions at both the school and college levels on multiple occasions.
+
+Year: 2022-2025`
+            },
+            {
+                id: 17,
+                title: "Social Practice",
+                text: `Over the past three years, I have led teams to carry out social practice activities in places such as Xinjiang, Guizhou and Qinghai. It was awarded as one of the top 100 excellent cases of summer practice across the country, and the main author's news releases were frequently published on national media platforms.
+
+Year: 2024-2025`
+            },
+            {
+                id: 18,
+                title: "Student Affairs",
+                text: `I was formerly a member of the executive committee of the student council. Presently, I serve as the deputy secretary of the undergraduate student party branch and the secretary of the Youth League branch for the class of 2022. Additionally, I am currently enrolled in the training course for student branch secretaries at Xiamen University.
+
+Year: 2022-2025`
+            },
+            {
+                id: 19,
+                title: "Academic Conference",
+                text: `As a member of the global eight-university delegation, I deeply participated in the interdisciplinary discussions and solution design for AI-driven higher education; through visits to Huawei and Tencent's generative AI workshops, I mastered the application logic of industrial-level technologies and simultaneously expanded my international academic network.
+
+Year: 2024`
+            },
+            {
+                id: 20,
+                title: "CV",
+                text: `A Digital Media Art student bridging design and technology to create immersive visual narratives and innovative cultural experiences.
+
+Year: 2022-2025`
+            },
+        ];
+
+        // 默认描述
+        const DEFAULT_DESC = `A curated collection of digital artifacts.
+Research Focus: Design & Cultural Industries.`;
+
+        let isGateOpen = false; 
+
+        // --- 1. Scene Setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xFFFFFF); 
+        scene.fog = new THREE.FogExp2(0xFFFFFF, 0.008); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        
+        function fitCamera() {
+            const aspect = window.innerWidth / window.innerHeight;
+            if (aspect < 0.7) camera.position.set(0, 0, 95);
+            else if (aspect >= 0.7 && aspect < 1.2) camera.position.set(0, 0, 80);
+            else camera.position.set(0, 0, 60);
+        }
+        fitCamera();
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2; 
+        renderer.shadowMap.enabled = true; 
+        renderer.shadowMap.type = THREE.SoftShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(5, 10, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // --- 2. Background Tech Effects ---
+        const gridHelperBottom = new THREE.GridHelper(200, 50, 0xdddddd, 0xeeeeee);
+        gridHelperBottom.position.y = -35; scene.add(gridHelperBottom);
+        const gridHelperTop = new THREE.GridHelper(200, 50, 0xdddddd, 0xeeeeee);
+        gridHelperTop.position.y = 35; scene.add(gridHelperTop);
+
+        const particleCount = 800; 
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlePos = [];
+        const particleSpeeds = [];
+        for(let i=0; i<particleCount; i++) {
+            particlePos.push((Math.random()-0.5)*150, (Math.random()-0.5)*150, (Math.random()-0.5)*100-20);
+            particleSpeeds.push(Math.random()*0.05+0.01);
+        }
+        particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(particlePos, 3));
+        const particlesMat = new THREE.PointsMaterial({ color: 0xbbbbbb, size: 0.3, transparent: true, opacity: 0.6 });
+        const particleSystem = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particleSystem);
+
+        // --- 3. Objects ---
+        const glassMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff, metalness: 0, roughness: 0.15, transmission: 1, thickness: 2.0, ior: 1.5,
+            attenuationColor: new THREE.Color(0xdddddd), attenuationDistance: 1.5, clearcoat: 1, side: THREE.DoubleSide
+        });
+        const borderMaterial = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.12 });
+        const boxGeo = new RoundedBoxGeometry(3.2, 4.2, 0.35, 4, 0.15); 
+        const borderGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(3.2, 4.2, 0.35));
+        const planeGeo = new THREE.PlaneGeometry(3, 4);
+        const texLoader = new THREE.TextureLoader();
+
+        const objects = [];
+        const group = new THREE.Group();
+        scene.add(group);
+        
+        const config = { scroll: 0, targetScroll: 0, isDragging: false, startX: 0, startY: 0, velocity: 0 };
+
+        for (let i = 0; i < TOTAL_OBJECTS; i++) {
+            const wrapper = new THREE.Group();
+            const baseScale = 0.8 + Math.random() * 0.4;
+            wrapper.scale.set(baseScale, baseScale, baseScale);
+
+            const glass = new THREE.Mesh(boxGeo, glassMaterial);
+            glass.castShadow = true; glass.receiveShadow = true; wrapper.add(glass);
+
+            // --- LOAD LOCAL IMAGE ---
+            const imgNum = String(i + 1).padStart(2, '0');
+            const url = `assets/${imgNum}.jpg`; 
+            
+            const imgMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, side: THREE.DoubleSide });
+            texLoader.load(url, (t) => { 
+                t.colorSpace = THREE.SRGBColorSpace; 
+                imgMat.map = t; 
+                imgMat.needsUpdate = true; 
+            }, undefined, (err) => {
+                console.warn(`Could not load image: ${url}`);
+            });
+
+            const img = new THREE.Mesh(planeGeo, imgMat);
+            img.position.z = 0; wrapper.add(img);
+
+            const border = new THREE.LineSegments(borderGeo, borderMaterial.clone()); 
+            wrapper.add(border);
+
+            wrapper.userData = { 
+                id: i + 1, 
+                url: url, 
+                randomPhase: Math.random()*Math.PI*2, 
+                randY: (Math.random()-0.5)*3, 
+                randZ: (Math.random()-0.5)*2, 
+                randRot: (Math.random()-0.5)*0.2, 
+                baseScale: baseScale 
+            };
+            group.add(wrapper); objects.push(wrapper);
+        }
+
+        // --- 4. Loop & Logic ---
+        const clock = new THREE.Clock();
+        const mouse = new THREE.Vector2();
+        const raycaster = new THREE.Raycaster();
+        let hoveredObj = null;
+
+        function updateLayout(time) {
+            const diff = config.targetScroll - config.scroll;
+            config.scroll += diff * 0.08;
+            config.velocity = Math.abs(diff);
+
+            gridHelperBottom.rotation.z = Math.sin(time*0.1)*0.02; gridHelperTop.rotation.z = -Math.sin(time*0.1)*0.02;
+            const positions = particleSystem.geometry.attributes.position.array;
+            for(let i=0; i<particleCount; i++) {
+                positions[i*3+1] += particleSpeeds[i] + config.velocity*0.5;
+                if(positions[i*3+1]>60) positions[i*3+1]=-60;
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+
+            objects.forEach((obj, i) => {
+                const radius = 15 + obj.userData.randZ * 0.5;
+                const angleStep = 0.65;
+                const theta = i * angleStep + (config.scroll * 0.2);
+                
+                const tx = radius * Math.cos(theta);
+                const tz = radius * Math.sin(theta);
+                const ty = Math.sin(theta * 1.5) * 4.0 + Math.sin(time * 1.5 + obj.userData.randomPhase) * 0.05 + obj.userData.randY;
+                
+                let targetRy = -theta + Math.PI/2;
+                if (obj === hoveredObj) {
+                    targetRy += mouse.x * 0.2; 
+                    obj.rotation.x += (mouse.y * 0.2 - obj.rotation.x) * 0.1;
+                } else {
+                    obj.rotation.x += (0 - obj.rotation.x) * 0.1;
+                }
+
+                obj.position.x += (tx - obj.position.x) * 0.1;
+                obj.position.y += (ty - obj.position.y) * 0.1;
+                obj.position.z += (tz - obj.position.z) * 0.1;
+                obj.rotation.y += (targetRy - obj.rotation.y) * 0.1;
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateLayout(clock.getElapsedTime());
+            
+            if (isGateOpen && window.innerWidth > 768 && !config.isDragging) {
+                if (!document.getElementById('about-modal').classList.contains('open')) {
+                    checkHover();
+                }
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        function checkHover() {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(group.children, true);
+            if (intersects.length > 0) {
+                let target = intersects[0].object;
+                while (target.parent !== group) { target = target.parent; }
+                if (hoveredObj !== target) {
+                    if (hoveredObj) resetObj(hoveredObj);
+                    hoveredObj = target;
+                    gsap.to(target.scale, { x: target.userData.baseScale * 1.2, y: target.userData.baseScale * 1.2, z: target.userData.baseScale * 1.2, duration: 0.4, ease: "back.out(1.7)" });
+                    document.getElementById('cursor').classList.add('hover-active'); document.getElementById('cursor-ring').classList.add('hover-active');
+                }
+            } else {
+                if (hoveredObj) { resetObj(hoveredObj); hoveredObj = null; document.getElementById('cursor').classList.remove('hover-active'); document.getElementById('cursor-ring').classList.remove('hover-active'); }
+            }
+        }
+        function resetObj(obj) { gsap.to(obj.scale, { x: obj.userData.baseScale, y: obj.userData.baseScale, z: obj.userData.baseScale, duration: 0.4, ease: "power2.out" }); }
+
+        // --- 5. Intro ---
+        const keywords = [ "Curatorial Practice", "Cultural Heritage", "Digital Innovation", "Creative Economy", "Visual Narrative", "Art Management", "Design Thinking", "Urban Regeneration", "Social Innovation", "Digital Humanities", "Museum Studies", "Intangible Heritage", "Public Policy", "User Experience", "Symbolic Economy", "Media Archaeology", "Place Making", "Virtual Curating", "Future Studies", "Aesthetics" ];
+        
+        function initIntro() {
+            const tl = gsap.timeline();
+            const container = document.getElementById('keyword-cloud');
+            const w = window.innerWidth; const h = window.innerHeight;
+            const minBuffer = Math.min(w, h) * 0.25; const maxReach = Math.sqrt(w*w + h*h) / 2;
+
+            tl.to('#hero-title', { opacity: 1, filter: "blur(0px)", scale: 1, letterSpacing: "0px", duration: 2.5, ease: "power2.out" })
+              .to('#hero-sub', { opacity: 1, y: 0, duration: 1.5, ease: "power2.out" }, "-=1.5");
+
+            keywords.forEach((word) => {
+                const el = document.createElement('div'); el.innerText = word; el.className = 'keyword';
+                const angle = Math.random() * Math.PI * 2;
+                const dist = minBuffer + Math.random() * (maxReach - minBuffer);
+                el.style.left = `calc(50% + ${Math.cos(angle)*dist}px)`; 
+                el.style.top = `calc(50% + ${Math.sin(angle)*dist}px)`; 
+                const size = (w < 768) ? (0.6 + Math.random()*0.3)+'rem' : (0.9 + Math.random()*0.4)+'rem';
+                el.style.fontSize = size;
+                container.appendChild(el);
+                gsap.fromTo(el, { opacity: 0, y: 20 }, { opacity: Math.random()*0.4+0.2, y: -20, duration: 3+Math.random()*2, delay: Math.random()*2, repeat: -1, yoyo: true, ease: "sine.inOut" });
+            });
+            tl.to('#enter-btn', { opacity: 1, y: 0, duration: 1 }, "-=1.0");
+        }
+        
+        window.enterMuseum = () => {
+            gsap.to(['#intro-content'], { opacity: 0, duration: 0.8, ease: "power2.in", onComplete: () => {
+                document.body.classList.add('open-gate');
+                const aspect = window.innerWidth / window.innerHeight;
+                let finalZ = 32;
+                if(aspect < 0.7) finalZ = 60; 
+                else if(aspect < 1.2) finalZ = 45; 
+
+                gsap.to(camera.position, { z: finalZ, duration: 2.5, ease: "power2.inOut", onComplete: () => {
+                    isGateOpen = true;
+                }});
+            }});
+        };
+        window.onload = initIntro;
+
+        // --- 6. Events ---
+        window.addEventListener('wheel', e => { if(isGateOpen) config.targetScroll += e.deltaY * 0.005; });
+        
+        window.addEventListener('mousedown', (e) => {
+             if(!isGateOpen) return;
+             if(e.target.closest('#modal') || e.target.closest('#enter-btn') || e.target.closest('#about-modal')) return;
+             config.isDragging = true; config.startX = e.clientX; document.body.style.cursor = 'grabbing';
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX/window.innerWidth)*2-1; mouse.y = -(e.clientY/window.innerHeight)*2+1;
+            if(config.isDragging && isGateOpen) { const dx = e.clientX - config.startX; config.startX = e.clientX; config.targetScroll += dx * 0.03; } 
+            if(window.innerWidth > 768) {
+                const cursor = document.getElementById('cursor'), ring = document.getElementById('cursor-ring');
+                gsap.to(cursor, {x:e.clientX, y:e.clientY, duration:0.1}); gsap.to(ring, {x:e.clientX, y:e.clientY, duration:0.25});
+            }
+        });
+        window.addEventListener('mouseup', () => { config.isDragging = false; document.body.style.cursor = 'none'; });
+
+        let touchStartY = 0;
+        window.addEventListener('touchstart', (e) => {
+            if(!isGateOpen) return;
+            if(e.target.closest('#modal') || e.target.closest('#enter-btn') || e.target.closest('#about-modal')) return;
+            touchStartY = e.touches[0].clientY; config.isDragging = true;
+        }, {passive: false});
+        window.addEventListener('touchmove', (e) => {
+            if(config.isDragging && isGateOpen) {
+                const dy = e.touches[0].clientY - touchStartY; touchStartY = e.touches[0].clientY;
+                config.targetScroll -= dy * 0.02; 
+            }
+        }, {passive: false});
+        window.addEventListener('touchend', () => { config.isDragging = false; });
+
+        window.addEventListener('click', (e) => {
+             if(!isGateOpen) return;
+             if(Math.abs(config.scroll - config.targetScroll) > 0.1 || config.isDragging) return;
+             raycaster.setFromCamera(mouse, camera);
+             const intersects = raycaster.intersectObjects(group.children, true);
+             if(intersects.length > 0 && !e.target.closest('#modal') && !e.target.closest('#about-modal') && !e.target.closest('.logo')) {
+                 let target = intersects[0].object;
+                 while(target.parent !== group) { target = target.parent; }
+                 openModal(target.userData.id, target.userData.url);
+             }
+        });
+
+        window.openAbout = () => { document.getElementById('about-modal').classList.add('open'); };
+        window.closeAbout = () => { document.getElementById('about-modal').classList.remove('open'); };
+        document.getElementById('about-modal').addEventListener('click', (e) => { if(e.target.id === 'about-modal') closeAbout(); });
+
+        const mag = document.getElementById('mag');
+        function handleMagnify(e, imgElement, wrapperElement) {
+            if(window.innerWidth < 768) return;
+            if(document.getElementById('video-container').classList.contains('active')) {
+                mag.style.display = 'none'; return;
+            }
+            const rect = wrapperElement.getBoundingClientRect(); 
+            const imgRect = imgElement.getBoundingClientRect();
+            if (e.clientX < imgRect.left || e.clientX > imgRect.right || e.clientY < imgRect.top || e.clientY > imgRect.bottom) { 
+                mag.style.display = 'none'; return; 
+            }
+            mag.style.display = 'block';
+            mag.style.backgroundImage = `url('${imgElement.src}')`;
+            mag.style.left = (e.clientX + 20) + 'px'; 
+            mag.style.top = (e.clientY + 20) + 'px';
+            const percX = (e.clientX - imgRect.left) / imgRect.width * 100; 
+            const percY = (e.clientY - imgRect.top) / imgRect.height * 100;
+            mag.style.backgroundPosition = `${percX}% ${percY}%`;
+        }
+
+        // --- Art Modal & Video Logic ---
+        const modal = document.getElementById('modal');
+        const modalImg = document.getElementById('modal-img');
+        const wrapper = document.getElementById('img-wrapper');
+        const playOverlay = document.getElementById('play-overlay');
+        const videoContainer = document.getElementById('video-container');
+        const artVideo = document.getElementById('art-video');
+        const videoHint = document.getElementById('video-hint');
+        const standardHint = document.getElementById('standard-hint');
+        
+        // Text Elements
+        const modalIdDisplay = document.getElementById('modal-id-display');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+
+        let currentVideoPath = "";
+
+        window.openModal = (id, url) => {
+            modal.classList.add('open'); 
+            modalImg.src = url;
+            modalImg.style.opacity = '1';
+            
+            // [修复] 更新右上角的 Object 序号
+            modalIdDisplay.innerText = String(id).padStart(2, '0');
+
+            // [修复] 查找并更新文字内容
+            const data = PROJECT_DATA.find(p => p.id === id);
+            if (data) {
+                modalTitle.innerText = data.title;
+                modalDesc.innerText = data.text; 
+            } else {
+                modalTitle.innerText = "Untitled Object";
+                modalDesc.innerText = DEFAULT_DESC;
+            }
+
+            // Reset Video
+            videoContainer.classList.remove('active');
+            artVideo.pause();
+            artVideo.currentTime = 0;
+
+            // Check if this ID is in the user's config list
+            if (VIDEO_INDICES.includes(id)) {
+                const vidNum = String(id).padStart(2, '0');
+                currentVideoPath = `assets/${vidNum}.mp4`;
+                
+                playOverlay.classList.remove('hidden');
+                videoHint.classList.remove('hidden');
+                standardHint.classList.add('hidden');
+            } else {
+                currentVideoPath = "";
+                playOverlay.classList.add('hidden');
+                videoHint.classList.add('hidden');
+                standardHint.classList.remove('hidden');
+            }
+        };
+
+        window.playVideo = () => {
+            if(!currentVideoPath) return;
+            artVideo.src = currentVideoPath;
+            
+            playOverlay.classList.add('hidden');
+            modalImg.style.opacity = '0';
+            videoContainer.classList.add('active');
+            
+            setTimeout(() => { artVideo.play(); }, 100);
+        };
+
+        window.closeModal = () => {
+            modal.classList.remove('open');
+            artVideo.pause();
+            videoContainer.classList.remove('active');
+            modalImg.style.opacity = '1';
+        };
+
+        wrapper.addEventListener('mousemove', (e) => handleMagnify(e, modalImg, wrapper));
+
+        const bioWrapper = document.querySelector('.about-card');
+        const bioImg = document.getElementById('about-img-el');
+        bioWrapper.addEventListener('mousemove', (e) => handleMagnify(e, bioImg, bioWrapper));
+
+        window.addEventListener('resize', () => {
+            fitCamera(); camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
+    </script>
+</body>
+</html>
